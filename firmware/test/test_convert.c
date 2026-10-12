@@ -5,16 +5,24 @@
 void setUp(void) {}
 void tearDown(void) {}
 
-void test_EF02_adc_0_gives_minus_50_00(void)          /* TC-02-01 */
+void test_EF02_adc_0_gives_minus_50_00(void)         /* TC-02-01 */
 { bool v; TEST_ASSERT_EQUAL_INT32(-5000, temp_from_adc(0u, &v)); TEST_ASSERT_FALSE(v); }
 
 void test_EF02_adc_2048_gives_115_00(void)             /* TC-02-03 : valeur médiane */
 { bool v; TEST_ASSERT_INT32_WITHIN(1, 11500, temp_from_adc(2048u, &v)); TEST_ASSERT_TRUE(v); }
+
+void test_EF02_adc_931_gives_25_00(void)
+{
+    bool v;
+    TEST_ASSERT_INT32_WITHIN(3, 2500, temp_from_adc(931u, &v));
+    TEST_ASSERT_TRUE(v);
+}
 
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_EF02_adc_0_gives_minus_50_00);
     RUN_TEST(test_EF02_adc_2048_gives_115_00);
+    RUN_TEST(test_EF02_adc_931_gives_25_00);
     return UNITY_END();
 }
