@@ -105,11 +105,11 @@ void node_step(void)
 
     switch (state) {
         case STATE_NORMAL:
-            last_filtered = filter_push(centi, valid);
             if (fault) {
                 state = STATE_FAULT;
                 emit(STATE_FAULT, last_filtered);
             } else {
+                last_filtered = filter_push(centi, valid);
                 if (threshold_step(last_filtered, false) == THR_RAISE) {
                     state = STATE_ALERT;
                     emit(STATE_ALERT, last_filtered);       /* EF-04, ENF-01 : trame immédiate */
@@ -117,11 +117,11 @@ void node_step(void)
             }
             break;
         case STATE_ALERT:
-            last_filtered = filter_push(centi, valid);
             if (fault) {
                 state = STATE_FAULT;
                 emit(STATE_FAULT, last_filtered);
             } else {
+                last_filtered = filter_push(centi, valid);
                 if (threshold_step(last_filtered, true) == THR_CLEAR) {
                     state = STATE_NORMAL;
                     emit(STATE_NORMAL, last_filtered);       /* fin d'alerte */
