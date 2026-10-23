@@ -85,7 +85,6 @@ static void emit(node_state_t st, int32_t temp_centi)
     }
     last_data_ms = hal_clock_ms();
 }
-
 /* --- machine à états --- */
 void node_step(void)
 {
@@ -100,54 +99,58 @@ void node_step(void)
     if (state == STATE_INIT) {
         last_filtered = filter_push(centi, valid);
         state = STATE_NORMAL;
-        return;
-    }
-
-    switch (state) {
-        case STATE_NORMAL:
-            if (fault) {
-                state = STATE_FAULT;
-                emit(STATE_FAULT, last_filtered);
-            } else {
-                last_filtered = filter_push(centi, valid);
-                if (threshold_step(last_filtered, false) == THR_RAISE) {
-                    state = STATE_ALERT;
-                    emit(STATE_ALERT, last_filtered);       /* EF-04, ENF-01 : trame immédiate */
+    } else {
+        switch (state) {
+            case STATE_NORMAL:
+                if (fault) {
+                    state = STATE_FAULT;
+                    emit(STATE_FAULT, last_filtered);
+                } else {
+                    last_filtered = filter_push(centi, valid);
+                    if (threshold_step(last_filtered, false) == THR_RAISE) {
+                        state = STATE_ALERT;
+                        emit(STATE_ALERT, last_filtered);
+                    }
                 }
-            }
-            break;
-        case STATE_ALERT:
-            if (fault) {
-                state = STATE_FAULT;
-                emit(STATE_FAULT, last_filtered);
-            } else {
+                break;
+
+            case STATE_ALERT:
+                if (fault) {
+                    state = STATE_FAULT;
+                    emit(STATE_FAULT, last_filtered);
+                } else {
+                    last_filtered = filter_push(centi, valid);
+                    if (threshold_step(last_filtered, true) == THR_CLEAR) {
+                        state = STATE_NORMAL;
+                        emit(STATE_NORMAL, last_filtered);
+                    }
+                }
+                break;
+
+            case STATE_FAULT:
                 last_filtered = filter_push(centi, valid);
-                if (threshold_step(last_filtered, true) == THR_CLEAR) {
+                if (!fault && fault_recover_ready()) {
                     state = STATE_NORMAL;
-                    emit(STATE_NORMAL, last_filtered);       /* fin d'alerte */
+                    filter_reset();
+                    threshold_reset_counter();
+                    emit(STATE_NORMAL, last_filtered);
                 }
-            }
-            break;
-        case STATE_FAULT:
-            last_filtered = filter_push(centi, valid);
-            if (!fault && fault_recover_ready()) {   /* EF-05 : reprise après N échantillons valides */
-                state = STATE_NORMAL;
-                filter_reset();
-                threshold_reset_counter();
-                emit(STATE_NORMAL, last_filtered);          /* reprise (EF-05) */
-            }
-            break;
-        default:
-            state = STATE_FAULT;                            /* état inconnu : repli sûr */
-            break;
+                break;
+
+            default:
+                state = STATE_FAULT;
+                break;
+        }
     }
 
-    /* EF-06 : trame de données périodique (seulement si aucune transition d'état majeure n'a déjà émis) */
-    if ((data_period_ms != 0u) && ((now - last_data_ms) >= data_period_ms)) {
+    /* EF-06 : vérification des données périodiques */
+    if ((data_period_ms != 0u) &&
+        ((now - last_data_ms) >= data_period_ms)) {
         emit(state, last_filtered);
         last_data_ms = now;
     }
 }
+
 
 /* --- commandes (EF-07, EF-08, EI-03) --- */
 static void send_ack(const char *cmd, const char *result, const char *reason)
