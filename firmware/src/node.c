@@ -57,7 +57,7 @@ static void flush_buffer(void)
     frame_t f;
     while (ringbuf_peek(&f)) {
         if (send_frame_now(&f) != 0) {
-            break;                      /* liaison retombée : on garde l'ordre, on réessaiera */
+            break;                    /* liaison retombée : on garde l'ordre, on réessaiera */
         }
         (void)ringbuf_pop(&f);
     }
@@ -72,6 +72,9 @@ static void emit(node_state_t st, int32_t temp_centi)
     f.t = hal_clock_ms() / 1000u;
     f.temp_centi = temp_centi;
     f.state = st;
+    
+    last_data_ms = hal_clock_ms();
+
     if (!hal_radio_connected()) {
         (void)ringbuf_push(&f);
         return;
@@ -82,7 +85,6 @@ static void emit(node_state_t st, int32_t temp_centi)
     if (send_frame_now(&f) != 0) {
         (void)ringbuf_push(&f);
     }
-    last_data_ms = hal_clock_ms();
 }
 
 /* --- machine à états --- */
@@ -97,7 +99,7 @@ void node_step(void)
     hal_watchdog_kick();
 
     if (state == STATE_INIT) {
-        state = STATE_NORMAL;          /* init_ok : la première mesure est traitée en NORMAL */
+        state = STATE_NORMAL;        /* init_ok : la première mesure est traitée en NORMAL */
     }
 
     switch (state) {
@@ -109,7 +111,7 @@ void node_step(void)
                 last_filtered = filter_push(centi, valid);
                 if (threshold_step(last_filtered, false) == THR_RAISE) {
                     state = STATE_ALERT;
-                    emit(STATE_ALERT, last_filtered);        /* EF-04, ENF-01 : trame immédiate */
+                    emit(STATE_ALERT, last_filtered);       /* EF-04, ENF-01 : trame immédiate */
                 }
             }
             break;
@@ -126,16 +128,16 @@ void node_step(void)
             }
             break;
         case STATE_FAULT:
-            if (false) {   /* TODO reprise */
+            last_filtered = filter_push(centi, valid);
+            if (!fault && fault_recover_ready()) {   /* EF-05 : reprise après N échantillons valides */
                 state = STATE_NORMAL;
                 filter_reset();
                 threshold_reset_counter();
-                last_filtered = filter_push(centi, valid);
-                emit(STATE_NORMAL, last_filtered);           /* reprise (EF-05) */
+                emit(STATE_NORMAL, last_filtered);          /* reprise (EF-05) */
             }
             break;
         default:
-            state = STATE_FAULT;                             /* état inconnu : repli sûr */
+            state = STATE_FAULT;                            /* état inconnu : repli sûr */
             break;
     }
 
@@ -167,7 +169,7 @@ void node_poll_commands(void)
     }
     buf[len] = '\0';
     if (!frame_crc_ok(buf, (size_t)len)) {
-        return;                                   /* EF-07 : commande au CRC invalide ignorée */
+        return;                                     /* EF-07 : commande au CRC invalide ignorée */
     }
     if (!json_get_str(buf, (size_t)len, "cmd", cmd, sizeof cmd)) {
         send_ack("?", "nack", "format");
