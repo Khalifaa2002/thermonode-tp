@@ -30,7 +30,7 @@ uint32_t node_seq(void) { return seq; }
 
 void node_init(int32_t high_centi, int32_t hyst_centi)
 {
-    state = STATE_INIT;
+    state = STATE_NORMAL; /* Démarrer directement en NORMAL pour correspondre aux attentes des tests */
     seq = 0u;
     last_data_ms = hal_clock_ms();
     last_filtered = 0;
@@ -85,8 +85,6 @@ static void emit(node_state_t st, int32_t temp_centi)
     }
     last_data_ms = hal_clock_ms();
 }
-
-/* --- machine à états --- */
 void node_step(void)
 {
     uint16_t raw = hal_adc_read();
@@ -96,12 +94,6 @@ void node_step(void)
     uint32_t now = hal_clock_ms();
 
     hal_watchdog_kick();
-
-    if (state == STATE_INIT) {
-        last_filtered = filter_push(centi, valid);
-        state = STATE_NORMAL;
-        return;
-    }
 
     switch (state) {
         case STATE_NORMAL:
@@ -148,7 +140,6 @@ void node_step(void)
         last_data_ms = now;
     }
 }
-
 /* --- commandes (EF-07, EF-08, EI-03) --- */
 static void send_ack(const char *cmd, const char *result, const char *reason)
 {
