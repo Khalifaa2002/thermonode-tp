@@ -28,7 +28,7 @@ bool fault_detect(int32_t centi, uint16_t raw, bool valid)
 
     fault = ((centi < TN_TEMP_MIN_CENTI) || (centi > TN_TEMP_MAX_CENTI)) || (frozen_count >= FAULT_FROZEN_N);
     if (!valid) {
-        fault = true;             /* code ADC impossible */
+        fault = true;            /* code ADC impossible */
     }
     if (fault) {
         valid_run = 0u;
