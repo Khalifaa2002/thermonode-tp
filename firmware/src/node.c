@@ -62,21 +62,19 @@ static void flush_buffer(void)
         (void)ringbuf_pop(&f);
     }
 }
-
 static void emit(node_state_t st, int32_t temp_centi)
 {
     frame_t f;
     memset(&f, 0, sizeof f);
     memcpy(f.id, node_id, TN_ID_LEN);
-    f.seq = seq++;
+    f.seq = seq;
     f.t = hal_clock_ms() / 1000u;
     f.temp_centi = temp_centi;
     f.state = st;
-    
-    last_data_ms = hal_clock_ms();
 
     if (!hal_radio_connected()) {
         (void)ringbuf_push(&f);
+        seq++;
         return;
     }
     if (ringbuf_count() > 0u) {
@@ -85,8 +83,9 @@ static void emit(node_state_t st, int32_t temp_centi)
     if (send_frame_now(&f) != 0) {
         (void)ringbuf_push(&f);
     }
+    seq++;
+    last_data_ms = hal_clock_ms();
 }
-
 /* --- machine à états --- */
 void node_step(void)
 {
@@ -142,8 +141,10 @@ void node_step(void)
     }
 
     /* EF-06 : trame de données périodique */
+    /* EF-06 : trame de données périodique */
     if ((data_period_ms != 0u) && ((now - last_data_ms) >= data_period_ms)) {
         emit(state, last_filtered);
+        last_data_ms = now;
     }
 }
 
