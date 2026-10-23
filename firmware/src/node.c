@@ -142,7 +142,7 @@ void node_step(void)
             break;
     }
 
-    /* EF-06 : trame de données périodique */
+    /* EF-06 : trame de données périodique (seulement si aucune transition d'état majeure n'a déjà émis) */
     if ((data_period_ms != 0u) && ((now - last_data_ms) >= data_period_ms)) {
         emit(state, last_filtered);
         last_data_ms = now;
