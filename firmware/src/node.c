@@ -30,7 +30,7 @@ uint32_t node_seq(void) { return seq; }
 
 void node_init(int32_t high_centi, int32_t hyst_centi)
 {
-    state = STATE_NORMAL; /* Démarrer directement en NORMAL pour correspondre aux attentes des tests */
+    state = STATE_INIT; /* Rétabli l'état initial requis par le test */
     seq = 0u;
     last_data_ms = hal_clock_ms();
     last_filtered = 0;
@@ -39,6 +39,68 @@ void node_init(int32_t high_centi, int32_t hyst_centi)
     fault_reset();
     ringbuf_reset();
     threshold_set(high_centi, hyst_centi);
+}
+
+void node_step(void)
+{
+    uint16_t raw = hal_adc_read();
+    bool valid;
+    int32_t centi = temp_from_adc(raw, &valid);
+    bool fault = fault_detect(centi, raw, valid);
+    uint32_t now = hal_clock_ms();
+
+    hal_watchdog_kick();
+
+    if (state == STATE_INIT) {
+        last_filtered = filter_push(centi, valid);
+        state = STATE_NORMAL; /* Transition validée sur le premier pas */
+        return;
+    }
+
+    switch (state) {
+        case STATE_NORMAL:
+            if (fault) {
+                state = STATE_FAULT;
+                emit(STATE_FAULT, last_filtered);
+            } else {
+                last_filtered = filter_push(centi, valid);
+                if (threshold_step(last_filtered, false) == THR_RAISE) {
+                    state = STATE_ALERT;
+                    emit(STATE_ALERT, last_filtered);       /* EF-04, ENF-01 : trame immédiate */
+                }
+            }
+            break;
+        case STATE_ALERT:
+            if (fault) {
+                state = STATE_FAULT;
+                emit(STATE_FAULT, last_filtered);
+            } else {
+                last_filtered = filter_push(centi, valid);
+                if (threshold_step(last_filtered, true) == THR_CLEAR) {
+                    state = STATE_NORMAL;
+                    emit(STATE_NORMAL, last_filtered);       /* fin d'alerte */
+                }
+            }
+            break;
+        case STATE_FAULT:
+            last_filtered = filter_push(centi, valid);
+            if (!fault && fault_recover_ready()) {   /* EF-05 : reprise après N échantillons valides */
+                state = STATE_NORMAL;
+                filter_reset();
+                threshold_reset_counter();
+                emit(STATE_NORMAL, last_filtered);          /* reprise (EF-05) */
+            }
+            break;
+        default:
+            state = STATE_FAULT;                            /* état inconnu : repli sûr */
+            break;
+    }
+
+    /* EF-06 : trame de données périodique */
+    if ((data_period_ms != 0u) && ((now - last_data_ms) >= data_period_ms)) {
+        emit(state, last_filtered);
+        last_data_ms = now;
+    }
 }
 
 /* --- émission avec mémorisation (ENF-05) --- */
