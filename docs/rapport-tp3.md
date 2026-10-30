@@ -22,7 +22,7 @@ Auteur : Khalifa Bnouni · Binôme : [à compléter]
 | EI-02 | Oracle externe (valeur de contrôle CRC), trames malformées, paramétrage pytest | test_frame.c, test_frame.py | 9 |
 | EI-03 | Décodage JSON, ACK/NACK | test_node.c, test_frame.c | 5 |
 | ENF-01 | Contrainte temporelle (< 2 s) avec horloge simulée | test_node.c | 1 |
-| ENF-05 | BVA 0/1/59/60/61 sur le tampon, mémorisation/retransmission, dédoublonnage | test_node.c, test_ringbuf.c, test_handler.py | 8 |
+| ENF-05 | BVA 0/1/59/60/61 sur le tampon, mémorisation/retransmission, dédoublonnage et test système après coupure du broker | test_node.c, test_ringbuf.c, test_handler.py, tests/integration/test_reconnect.py | 8 cas unitaires + 1 intégration |
 
 Les nombres de cas sont ceux de la matrice de traçabilité (section 4).
 
@@ -84,7 +84,7 @@ Il injecte 30 mesures (moins que les 60 du tampon) et ne rejoue pas de messages.
 | Fonctions | [À COMPLÉTER] | non relevé | 92,1 % (35/38) |
 | Branches | [À COMPLÉTER] (≈ 5 % selon le sujet) | 79,4 % (108/136) | 88,6 % (124/140) |
 
-- **Tests unitaires après correction :** 68 réussis, 0 échec, 0 ignoré (3 + 8 + 6 + 11 + 25 + 6 + 9).
+- **Tests unitaires après correction :** 90 réussis, 0 échec, 0 ignoré : 68 tests firmware (3 + 8 + 6 + 11 + 25 + 6 + 9) et 22 tests unitaires gateway.
 - **Empreinte :** Flash 10 176 / 49 152 octets, RAM 1 640 / 8 192 octets (statut OK).
 - **Zones rouges :** le rapport HTML a mis en évidence dans `node.c` une zone non couverte contenant un `if (false)`, considérée comme du code mort. **[À VÉRIFIER]** avec `reports/coverage-fw.html` (lignes exactes).
 - **Traçabilité :** 20 exigences, 12 couvertes, 8 orphelines (C-01, C-02, C-03, EI-01, ENF-02, ENF-03, ENF-04, ENF-06). **[À COMPLÉTER]** pourquoi cela est acceptable.
@@ -92,12 +92,21 @@ Il injecte 30 mesures (moins que les 60 du tampon) et ne rejoue pas de messages.
 ## 5. Tests CPS
 
 - **Temps (ENF-01) :** test avec horloge simulée (`hal_double_advance_ms`) : la trame d'alerte est émise moins de 2 s après la troisième mesure filtrée ; le test passe.
-- **Communication (étape 10) :** la coupure du broker est simulée (conteneurs Docker Compose). Le test `test_reconnect.py` échoue dans les captures (« tampon 0 < 3 après 60 s ») et la boucle de 10 exécutions affiche des échecs : la condition « 10/10 » n'est **pas** démontrée. **[À COMPLÉTER]** après correction ou analyse (échec systématique ou instable ?).
+- **Communication (ENF-05) :** le test d'intégration `gateway/tests/integration/test_reconnect.py` simule une coupure du broker avec Docker Compose, produit des mesures pendant l'interruption, puis vérifie leur retransmission après reconnexion. Résultat : 1 test réussi en 102,78 s. Le diagnostic MQTT a observé un maximum de 6 trames en buffer. Après reconnexion, les séquences 1 à 7 ont été reçues sans trou ni doublon. Cette validation démontre le scénario testé, mais pas une réussite de 10 exécutions sur 10.
 - **Capteur (EF-05) :** hors plage et capteur figé couverts par MC/DC (T1 à T4) et par les tests de `test_node.c`.
+- **Persistance SQLite :** la passerelle utilise `DB_PATH=/data/gw.sqlite`, dans le volume Docker nommé `ci_gwdata`. Le teardown des tests utilise `docker compose down` sans supprimer le volume. Vérification effectuée : table `measures`, 70 lignes, séquence maximale 69 et `PRAGMA integrity_check` = `ok`.
 - **Ressources :** `size-check` validé (Flash/RAM ci-dessus) ; AddressSanitizer a révélé DEF-02 et DEF-05. **[À COMPLÉTER]** : capture de `grep -c AddressSanitizer` = 0 après correction.
 
 ## 6. Limites de la suite et temps passé
 
 **Ce que la suite ne prouve pas :** le comportement sur le matériel réel (parasites sur l'ADC, vieillissement du capteur) ; les 8 exigences orphelines (cible, testabilité, passerelle, interface capteur, consommation, empreinte, règles de codage, robustesse réseau) ; l'absence totale de défaut (une suite verte ne le prouve pas).
 
-**Temps passé (estimé) :** analyse et environnement ~2 h · modules de base (convert, filter, threshold, fault) ~4 h · machine à états et HAL de test ~5 h · derniers bugs et validation finale des 68 tests ~2 h.
+**Temps passé (estimé) :** analyse et environnement ~2 h · modules de base (convert, filter, threshold, fault) ~4 h · machine à états et HAL de test ~5 h · derniers bugs, validation des 90 tests unitaires et intégration ENF-05 ~2 h.
+
+## 7. Validation finale et version du projet
+
+- **Tests unitaires :** 90 réussis (68 firmware et 22 gateway).
+- **Test d'intégration ENF-05 :** 1 réussi ; retransmission vérifiée après reconnexion du broker.
+- **Contrôle Git :** `git diff --check` sans erreur avant commit.
+- **Commit de validation :** `dcf6c11` — `test(integration): validate ENF-05 reconnection and buffer persistence`.
+- **Dépôt distant :** commit poussé sur la branche `main` du dépôt GitHub.
