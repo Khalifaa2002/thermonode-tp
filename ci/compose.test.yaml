@@ -9,6 +9,13 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+  gateway-init:
+    image: ci-gateway:latest
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 1000:1000 /data"]
+    volumes: ["gwdata:/data"]
+    restart: "no"
   gateway:
     build: { context: ../gateway }
     ports: ["8000:8000"]
@@ -16,6 +23,7 @@ services:
     volumes: ["gwdata:/data"]
     depends_on:
       broker: { condition: service_healthy }
+      gateway-init: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s

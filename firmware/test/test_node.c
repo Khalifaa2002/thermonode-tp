@@ -128,6 +128,21 @@ void test_ENF01_alert_frame_within_2s_of_third_filtered_sample(void) /* contrain
     TEST_ASSERT_LESS_THAN_UINT32(t3 + 2000u, hal_double_last_send_ms() + 1u);
 }
 
+void test_EF05_alert_enters_fault_with_frame(void) /* ALERT -> FAULT */
+{
+    feed(ADC_25, 5);
+    feed(ADC_70, 6);
+
+    TEST_ASSERT_EQUAL(STATE_ALERT, node_state());
+    TEST_ASSERT_EQUAL_INT(1, hal_double_send_calls());
+
+    feed(ADC_130, 1);
+
+    TEST_ASSERT_EQUAL(STATE_FAULT, node_state());
+    TEST_ASSERT_EQUAL_INT(2, hal_double_send_calls());
+    TEST_ASSERT_TRUE(last_frame_has("\"state\":\"FAULT\""));
+}
+
 void test_EF05_out_of_range_enters_fault_with_frame(void) /* NORMAL -> DÉFAUT (R1) */
 { 
     feed(ADC_25, 5); 
@@ -299,6 +314,7 @@ int main(void)
     RUN_TEST(test_EF04_alert_kept_at_hysteresis_bound);
     RUN_TEST(test_ENF01_alert_frame_within_2s_of_third_filtered_sample);
     RUN_TEST(test_EF05_out_of_range_enters_fault_with_frame);
+    RUN_TEST(test_EF05_alert_enters_fault_with_frame);
     RUN_TEST(test_EF05_frozen_sensor_enters_fault);
     RUN_TEST(test_EF05_recovers_to_normal_after_5_valid_samples);
     RUN_TEST(test_EF05_spike_isolated_is_fault_not_alert);

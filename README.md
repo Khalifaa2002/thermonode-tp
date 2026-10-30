@@ -8,13 +8,20 @@ aux ateliers du module *Test, validation et DevOps pour les systèmes cyberphysi
 ```bash
 sudo apt install build-essential gcc-arm-none-eabi cppcheck python3-pip docker-compose-v2
 pip install gcovr && pip install -r gateway/requirements.txt
-make -C firmware test            # 75 tests unitaires Unity
+make -C firmware test            # 69 tests firmware Unity
 make -C firmware coverage        # rapport dans reports/coverage-fw.html
 make -C firmware static          # cppcheck -> reports/cppcheck.xml
 make -C firmware size-check      # compilation croisée + porte mémoire (ENF-03)
-cd gateway && pytest tests/unit  # 24 tests pytest
-docker compose -f ci/compose.test.yaml up -d --build --wait   # broker + passerelle + simulateur
-cd gateway && MQTT_HOST=localhost pytest tests/integration    # tests système SIL
+
+# 22 tests unitaires Gateway + 1 test d'intégration ENF-05
+(cd gateway && pytest tests/unit tests/integration -v --junitxml=../reports/junit-gateway-core.xml)
+
+# Démarrer l'environnement pour les 2 tests smoke
+docker compose -f ci/compose.test.yaml up -d --build --wait
+(cd gateway && MQTT_HOST=localhost GATEWAY_URL=http://localhost:8000 pytest tests/smoke -v --junitxml=../reports/junit-smoke.xml)
+
+# Arrêter les services sans supprimer le volume SQLite
+docker compose -f ci/compose.test.yaml down
 ```
 
 ## Arborescence
