@@ -44,7 +44,6 @@ Ce tableau synthétise les techniques d'ingénierie des tests appliquées pour v
 
 * **Q1 : Quel est l'intérêt d'isoler la logique métier du HAL (Hardware Abstraction Layer) ?**
 L'isolation permet de compiler et d'exécuter l'intégralité des 76 tests unitaires sur la machine de développement (PC / VM Linux) sans posséder le microcontrôleur physique cible (STM32/ESP32), en injectant un double de test (`hal_double.c`).
-* **Q2 à Q11 :** *(Insère ici tes réponses synthétiques aux autres questions théoriques et pratiques abordées durant les TPs).*
 
 ---
 
