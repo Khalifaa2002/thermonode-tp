@@ -5,7 +5,7 @@ from tests.unit.test_frame import signed
 def frame(seq, state="NORMAL", node="TN01", temp=25.5):
     return signed(f'{{"id":"{node}","seq":{seq},"t":{1700000000 + seq},"temp":{temp},"state":"{state}"}}')
 
-def test_EFG1_valid_frame_is_stored(tmp_path):
+def test_C03_EFG1_valid_frame_is_stored(tmp_path):
     h = Handler(tmp_path / "gw.sqlite")
     assert h.on_data(frame(0)) is not None
     assert h.storage.count("TN01") == 1
@@ -26,7 +26,7 @@ def test_ENF05_gap_is_counted(tmp_path):
     h.on_data(frame(1)); h.on_data(frame(4))
     assert h.metrics["frames_gap"] == 2
 
-def test_EFG2_rejected_frame_is_counted_not_stored(tmp_path):
+def test_C03_EFG2_rejected_frame_is_counted_not_stored(tmp_path):
     h = Handler(tmp_path / "gw.sqlite")
     assert h.on_data("{garbage") is None
     assert h.storage.count() == 0 and h.metrics["frames_rejected"] == 1
@@ -48,3 +48,23 @@ def test_last_seq_survives_restart(tmp_path):
     h2 = Handler(db)
     h2.on_data(frame(9))
     assert h2.storage.count() == 1 and h2.metrics["frames_duplicate"] == 1
+
+def test_C03_sqlite_retention_is_90_days(tmp_path):
+    from gateway.storage import Storage, RETENTION_S
+
+    now = 2_000_000_000
+    storage = Storage(tmp_path / "retention.sqlite")
+
+    storage.insert("TN01", 1, 100, 25.0, "NORMAL",
+                   now=now - RETENTION_S - 1)
+    storage.insert("TN01", 2, 101, 25.0, "NORMAL",
+                   now=now - RETENTION_S)
+    storage.insert("TN01", 3, 102, 25.0, "NORMAL",
+                   now=now - 1)
+
+    assert storage.count() == 3
+    assert storage.purge(now=now) == 1
+    assert storage.count() == 2
+    assert storage.last_seq("TN01") == 3
+
+    storage.close()

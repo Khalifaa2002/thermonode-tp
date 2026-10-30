@@ -80,36 +80,39 @@ Il injecte 30 mesures (moins que les 60 du tampon) et ne rejoue pas de messages.
 
 | Mesure | TP 0 | Avant correction | Après correction |
 |---|---|---|---|
-| Lignes | non relevé | 85,2 % (236/277) | 93,7 % (268/286) |
-| Fonctions | non relevé | non relevé | 92,1 % (35/38) |
-| Branches | non relevé | 79,4 % (108/136) | 89,3 % (125/140) |
+| Firmware — lignes | non relevé | 85,2 % (236/277) | 94,8 % (275/290) |
+| Firmware — fonctions | non relevé | non relevé | 92,1 % (35/38) |
+| Firmware — branches | non relevé | 79,4 % (108/136) | 90,8 % (129/142) |
+| Gateway — couverture globale | non relevé | 79 % | 81 % |
 
-- **Tests unitaires après correction :** 91 réussis, 0 échec, 0 ignoré : 69 tests firmware (3 + 8 + 6 + 11 + 26 + 6 + 9) et 22 tests unitaires Gateway. Avec 1 test d'intégration et 2 tests smoke, le total est de 94 tests automatisés réussis.
+- **Tests automatisés :** 100 tests distincts réussis sur les campagnes retenues : 74 tests firmware, 23 tests unitaires Gateway, 1 test d'intégration ENF-05 et 2 tests Smoke. Les campagnes ont été exécutées séparément.
+- **Couverture Gateway :** 81 % sur 145 instructions et 38 branches ; `storage.py` atteint 100 %, `handler.py` 98 %, `frame.py` 89 %. `health.py` reste à 0 % dans la mesure pytest, car le service s'exécute dans un processus Docker distinct.
 - **Empreinte :** Flash 10 232 / 49 152 octets, RAM 1 640 / 8 192 octets (statut OK).
-- **Branches non couvertes :** 15 branches sur 140 ne sont pas couvertes par les tests (89,3 % de couverture). Aucune instruction `if (false)` n'a été retrouvée dans `firmware/src/node.c`.
-- **Traçabilité :** 20 exigences, 12 couvertes, 8 orphelines (C-01, C-02, C-03, EI-01, ENF-02, ENF-03, ENF-04, ENF-06). Ces 8 exigences ne sont pas validées par la suite actuelle ; elles restent des limites de couverture et leur acceptabilité doit être justifiée selon le périmètre du TP.
+- **Branches firmware non couvertes :** 13 branches sur 142 ne sont pas couvertes (90,8 % de couverture). Aucune instruction `if (false)` n'a été retrouvée dans `firmware/src/node.c`.
+- **Traçabilité :** 20 exigences, 13 couvertes par des tests (65 %), 7 orphelines : C-01, C-02, EI-01, ENF-02, ENF-03, ENF-04 et ENF-06. Elles ne sont pas déclarées validées par la suite de tests actuelle.
 
 ## 5. Tests CPS
 
 - **Temps (ENF-01) :** test avec horloge simulée (`hal_double_advance_ms`) : la trame d'alerte est émise moins de 2 s après la troisième mesure filtrée ; le test passe.
-- **Communication (ENF-05) :** le test d'intégration `gateway/tests/integration/test_reconnect.py` simule une coupure du broker avec Docker Compose, produit des mesures pendant l'interruption, puis vérifie leur retransmission après reconnexion. Dernière exécution : 1 test réussi en 110,33 s. Le diagnostic MQTT a observé un maximum de 6 trames en buffer. Après reconnexion, les séquences 1 à 7 ont été reçues sans trou ni doublon. Cette validation démontre le scénario testé, mais pas une réussite de 10 exécutions sur 10.
-- **Capteur (EF-05) :** hors plage et capteur figé couverts par MC/DC (T1 à T4) et par les tests de `test_node.c`.
-- **Persistance SQLite :** la passerelle utilise `DB_PATH=/data/gw.sqlite`, dans le volume Docker nommé `ci_gwdata`. Le teardown des tests utilise `docker compose down` sans supprimer le volume. Vérification en lecture seule : table `measures` présente et `PRAGMA integrity_check` retourne `ok`. Les données observées comprennent les nœuds `TN01` et `SMOKE` ; ce contrôle ne démontre pas la conservation des données pendant 90 jours. Le service `gateway-init` attribue les permissions du volume à l'UID/GID 1000:1000 avant le démarrage de la Gateway, exécutée sous l'utilisateur non privilégié `gw`. Ce mécanisme a été validé sur le volume existant et sur un volume temporaire.
-- **Ressources :** `size-check` validé (Flash/RAM ci-dessus) ; AddressSanitizer a révélé DEF-02 et DEF-05. Les exécutions précédentes d'AddressSanitizer ont permis d'identifier DEF-02 et DEF-05. Une exécution complète de toutes les suites avec sanitizer après correction n'est pas revendiquée.
+- **Communication (ENF-05) :** le test d'intégration `gateway/tests/integration/test_reconnect.py` simule une coupure du broker avec Docker Compose, produit des mesures pendant l'interruption, puis vérifie leur retransmission après reconnexion. La campagne d'intégration a réussi ; le diagnostic MQTT a observé un maximum de 6 trames en buffer. Après reconnexion, les séquences 1 à 7 ont été reçues sans trou ni doublon. Cette validation démontre le scénario testé, mais pas une réussite de 10 exécutions sur 10.
+- **Capteur (EF-05) :** hors plage et capteur figé couverts par les tests de `test_node.c`, avec vérification des conditions de validité.
+- **Persistance SQLite :** la passerelle utilise `DB_PATH=/data/gw.sqlite`, dans le volume Docker nommé `ci_gwdata`. Le teardown des tests utilise `docker compose down` sans supprimer le volume. Une vérification en lecture seule a confirmé que la table `measures` est présente et que `PRAGMA integrity_check` retourne `ok`. Le test `test_C03_sqlite_retention_is_90_days` vérifie de manière déterministe la purge d'une mesure âgée de plus de 90 jours, la conservation d'une mesure exactement à la limite et la conservation des mesures récentes. Il ne simule pas 90 jours de fonctionnement réel.
+- **Initialisation Docker :** le service `gateway-init` attribue les permissions du volume à l'UID/GID 1000:1000 avant le démarrage de la Gateway, exécutée sous l'utilisateur non privilégié `gw`. Ce mécanisme a été validé sur le volume existant et sur un volume temporaire.
+- **Ressources et mémoire :** `size-check` est validé (Flash/RAM ci-dessus). AddressSanitizer a permis de révéler DEF-02 et DEF-05 avant correction. Après correction, la suite firmware complète a été exécutée avec `SAN=1` : 74 tests réussis, sans occurrence AddressSanitizer, UBSan ou échec Unity. Cette validation sanitizer porte sur le firmware.
 
 ## 6. Limites de la suite et temps passé
 
-**Ce que la suite ne prouve pas :** le comportement sur le matériel réel (parasites sur l'ADC, vieillissement du capteur) ; les 8 exigences orphelines (cible, testabilité, passerelle, interface capteur, consommation, empreinte, règles de codage, robustesse réseau) ; l'absence totale de défaut (une suite verte ne le prouve pas).
+**Ce que la suite ne prouve pas :** le comportement sur le matériel réel (parasites sur l'ADC, vieillissement du capteur) ; la satisfaction des 7 exigences orphelines (cible, testabilité, interface capteur, consommation, empreinte mémoire, règles de codage et robustesse réseau) ; l'absence totale de défaut (une suite verte ne le prouve pas).
 
-**Temps passé (estimé) :** analyse et environnement ~2 h · modules de base (convert, filter, threshold, fault) ~4 h · machine à états et HAL de test ~5 h · derniers bugs, validation des 94 tests automatisés et intégration ENF-05 ~2 h.
+**Temps passé (estimé) :** analyse et environnement ~2 h · modules de base (convert, filter, threshold, fault) ~4 h · machine à états et HAL de test ~5 h · derniers bugs, validation des tests automatisés et intégration ENF-05 ~2 h.
 
 ## 7. Validation finale et version du projet
 
-- **Tests firmware :** 69 réussis, 0 échec.
-- **Tests unitaires Gateway :** 22 réussis, 0 échec.
-- **Test d'intégration ENF-05 :** 1 réussi ; retransmission vérifiée après reconnexion du broker.
-- **Tests smoke Gateway :** 2 réussis, 0 échec.
-- **Bilan global :** 94 tests réussis, 0 échec, 0 erreur et 0 ignoré.
-- **Rapports JUnit :** `reports/junit-fw.xml`, `reports/junit-gateway-core.xml` et `reports/junit-smoke.xml`.
+- **Tests firmware :** 74 réussis, 0 échec.
+- **Tests unitaires Gateway :** 23 réussis, 0 échec.
+- **Test d'intégration ENF-05 :** 1 réussi lors de la campagne d'intégration ; retransmission vérifiée après reconnexion du broker.
+- **Tests Smoke Gateway :** 2 réussis, 0 échec.
+- **Bilan global :** 100 tests distincts réussis sur les campagnes retenues.
+- **Rapports JUnit de référence :** `reports/junit-fw.xml`, `reports/junit-gateway-final.xml` et `reports/junit-smoke.xml`. Le rapport de la campagne d'intégration séparée est `reports/junit-gateway-core.xml`.
 - **Initialisation Docker :** `gateway-init` prépare les permissions du volume SQLite avant le démarrage de la Gateway.
-- **Historique Git :** `dcf6c11` est le commit antérieur de validation ENF-05. HEAD est `d3130ee` sur `main`. Les modifications locales présentées ici ne sont pas encore commitées ni poussées.
+- **Historique Git :** HEAD de référence avant les modifications locales : `4b31742` sur `main`, synchronisé avec `origin/main`. Les modifications locales présentées ici ne sont pas encore commitées ni poussées.

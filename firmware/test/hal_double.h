@@ -7,6 +7,7 @@ void           hal_double_reset(void);
 void           hal_double_push_adc(uint16_t v);          /* séquence rejouée par hal_adc_read */
 void           hal_double_advance_ms(uint32_t d);        /* horloge simulée */
 void           hal_double_set_connected(bool c);         /* simule la perte de liaison */
+void           hal_double_fail_next_send(void);          /* simule un échec ponctuel d'envoi */
 int            hal_double_send_calls(void);              /* nombre d'appels réussis à hal_radio_send */
 int            hal_double_ack_calls(void);
 const uint8_t *hal_double_last_frame(size_t *len);

@@ -209,6 +209,38 @@ void test_ENF05_frames_buffered_and_resent_in_order_after_outage(void) /* perte 
     }
 }
 
+
+void test_ENF05_new_frame_waits_until_old_buffer_is_sent(void)
+{
+    node_set_data_period_ms(1000u);
+
+    /* Trois anciennes trames sont conservées pendant la coupure. */
+    hal_double_set_connected(false);
+    feed(ADC_25, 3);
+    TEST_ASSERT_EQUAL_INT(0, hal_double_send_calls());
+
+    /* La liaison revient, mais le premier envoi échoue ponctuellement. */
+    hal_double_set_connected(true);
+    hal_double_fail_next_send();
+    feed(ADC_25, 1);
+
+    /* Aucune nouvelle trame ne doit contourner les anciennes. */
+    TEST_ASSERT_EQUAL_INT(0, hal_double_send_calls());
+
+    /* Au cycle suivant, les anciennes puis la nouvelle sont envoyées. */
+    feed(ADC_25, 1);
+    TEST_ASSERT_EQUAL_INT(5, hal_double_send_calls());
+
+    for (int i = 0; i < 5; i++) {
+        size_t n;
+        const uint8_t *f = hal_double_frame(i, &n);
+        char pat[24];
+        snprintf(pat, sizeof pat, "\"seq\":%d,", i);
+        TEST_ASSERT_NOT_NULL(f);
+        TEST_ASSERT_NOT_NULL_MESSAGE(strstr((const char *)f, pat), pat);
+    }
+}
+
 void test_ENF05_buffer_kept_while_still_disconnected(void)
 {
     node_set_data_period_ms(1000u); 
@@ -320,6 +352,7 @@ int main(void)
     RUN_TEST(test_EF05_spike_isolated_is_fault_not_alert);
     RUN_TEST(test_EF06_periodic_data_frame_every_10s);
     RUN_TEST(test_ENF05_frames_buffered_and_resent_in_order_after_outage);
+    RUN_TEST(test_ENF05_new_frame_waits_until_old_buffer_is_sent);
     RUN_TEST(test_ENF05_buffer_kept_while_still_disconnected);
     RUN_TEST(test_EF07_command_set_threshold_ok_and_ack);
     RUN_TEST(test_EF07_command_out_of_range_is_nacked);

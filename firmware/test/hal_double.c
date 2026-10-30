@@ -13,6 +13,7 @@ static bool     connected = true;
 static uint8_t  frames[MAX_FRAMES][TN_FRAME_MAX];
 static size_t   frame_len[MAX_FRAMES];
 static int      send_calls;
+static int      fail_next_send;
 static uint32_t last_send_ms;
 static uint8_t  last_ack[TN_FRAME_MAX];
 static size_t   last_ack_len;
@@ -24,7 +25,7 @@ static int      wd_kicks;
 void hal_double_reset(void)
 {
     adc_n = 0u; adc_i = 0u; fake_ms = 0u; connected = true;
-    send_calls = 0; last_send_ms = 0u; ack_calls = 0; last_ack_len = 0u;
+    send_calls = 0; fail_next_send = 0; last_send_ms = 0u; ack_calls = 0; last_ack_len = 0u;
     cmd_pending = false; wd_kicks = 0;
     memset(frame_len, 0, sizeof frame_len);
 }
@@ -39,6 +40,7 @@ void hal_double_advance_ms(uint32_t d)
     fake_ms += d;
 }
 void hal_double_set_connected(bool c)  { connected = c; }
+void hal_double_fail_next_send(void) { fail_next_send++; }
 int  hal_double_send_calls(void)       { return send_calls; }
 int  hal_double_ack_calls(void)        { return ack_calls; }
 uint32_t hal_double_last_send_ms(void) { return last_send_ms; }
@@ -76,6 +78,10 @@ bool     hal_radio_connected(void) { return connected; }
 int hal_radio_send(const uint8_t *buf, size_t len)
 {
     if (!connected) { return -1; }
+    if (fail_next_send > 0) {
+        fail_next_send--;
+        return -1;
+    }
     if ((send_calls < MAX_FRAMES) && (len < TN_FRAME_MAX)) {
         memcpy(frames[send_calls], buf, len); frames[send_calls][len] = 0u; frame_len[send_calls] = len;
     }

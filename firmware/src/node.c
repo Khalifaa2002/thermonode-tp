@@ -79,6 +79,13 @@ static void emit(node_state_t st, int32_t temp_centi)
     }
     if (ringbuf_count() > 0u) {
         flush_buffer();
+
+        /* Les anciennes trames restent prioritaires sur la nouvelle. */
+        if (ringbuf_count() > 0u) {
+            (void)ringbuf_push(&f);
+            last_data_ms = hal_clock_ms();
+            return;
+        }
     }
     if (send_frame_now(&f) != 0) {
         (void)ringbuf_push(&f);
