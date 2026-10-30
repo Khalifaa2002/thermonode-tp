@@ -1,9 +1,9 @@
 # Rapport TP 3 — Concevoir et automatiser les tests de ThermoNode
 
 Module EET3S1.3-TVD — Test, validation et DevOps pour les systèmes cyberphysiques · EET3 / S1 — 2026-2027
-Auteur : Khalifa Bnouni ·
+Auteur : Khalifa Bnouni · Binôme : [à compléter]
 
-
+> Les passages marqués **[À VÉRIFIER]** ou **[À COMPLÉTER]** correspondent à des points que les captures du compte rendu Word ne démontrent pas ou contredisent. Ils sont à trancher avant remise.
 
 ---
 
