@@ -1,8 +1,4 @@
-C'est parti ! Je te propose un modèle complet et structuré pour ton rapport **`docs/rapport-tp3.md`**. Ce modèle intègre directement les exigences de la grille d'évaluation (les 6 sections demandées) et s'appuie sur l'état final de ton projet (76 tests au vert, traçabilité, journal des défauts, tests CPS).
 
-Tu peux copier ce contenu pour créer ou remplir ton fichier de rapport dans ton répertoire de projet sur VS Code.
-
----
 
 # Rapport de TP3 — ThermoNode : Validation et Test d'un Système Embarqué CPS
 
