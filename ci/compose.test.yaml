@@ -12,7 +12,7 @@ services:
   gateway:
     build: { context: ../gateway }
     ports: ["8000:8000"]
-    environment: { MQTT_HOST: broker, DB_PATH: /tmp/data/gw.sqlite }
+    environment: { MQTT_HOST: broker, DB_PATH: /data/gw.sqlite }
     volumes: ["gwdata:/data"]
     depends_on:
       broker: { condition: service_healthy }
