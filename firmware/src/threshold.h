@@ -7,7 +7,7 @@
 #define THR_MIN_CENTI     2000     /* 20 °C  (EF-07) */
 #define THR_MAX_CENTI     10000    /* 100 °C (EF-07) */
 #define THR_DEFAULT_HIGH  6000
-#define THR_DEFAULT_HYST  500
+#define THR_DEFAULT_HYST  400
 
 typedef enum { THR_NONE = 0, THR_RAISE, THR_CLEAR } thr_event_t;
 
