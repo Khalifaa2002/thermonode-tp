@@ -1,0 +1,43 @@
+TP4 ThermoNode - Historique des changements verifies sur main (fbdd119)
+
+*   fbdd119 (HEAD -> main, origin/main) Merge pull request #3 from Khalifaa2002/docs/deviations
+|\
+| * 49a4489 (origin/docs/deviations, docs/deviations) docs(tp4): record static analysis results
+| * 7f117d3 docs(misra): document targeted deviations
+* |   00b3420 Merge pull request #2 from Khalifaa2002/chore/pylint
+|\ \
+| * | 389baa5 (origin/chore/pylint, chore/pylint) chore(gateway): address pylint findings
+| |/
+* |   9071ab1 Merge pull request #1 from Khalifaa2002/style/misra-required
+|\ \
+| * | 520c6dd (origin/style/misra-required, style/misra-required) fix(frame): validate CRC conversion (MISRA 22.8)
+| * | 1401161 chore(misra): justify two local false positives
+| * | 9ee8d2c fix(firmware): avoid composite casts (MISRA 10.8)
+| * | 6db8982 style(frame): make state_name private (MISRA 8.7)
+| * | d875353 style(firmware): distinguish module variables (MISRA 5.9)
+| * | 22f79ba fix(frame): check integer conversion (MISRA 22.8)
+| * | 7326529 style(firmware): clarify operator precedence (MISRA 12.1)
+| * | f10fdcc style(frame): split declarations (MISRA 12.3)
+| * | 9aadbf8 style(node): separate sequence increment (MISRA 13.3)
+| * | 83422ad fix(firmware): handle return values (MISRA 17.7)
+| * | ef0b5e4 fix(node): use configured period limit (MISRA 2.5)
+| |/
+* |   5c86db7 Merge pull request #4 from Khalifaa2002/feat/threshold-defaults-doc
+|\ \
+| |/
+|/|
+| * 4d63801 (origin/feat/threshold-defaults-doc, feat/threshold-defaults-doc) docs(threshold): document default hysteresis (EF-04)
+| * ecde217 (chore/threshold-default-4c) chore(threshold): hystérésis par défaut 4 °C après retour terrain (EF-04)
+|/
+* 1bcdfa0 docs(review): request changes on MR 7 (EF-04)
+| * e8633f5 (fix/EF-04-hysteresis) fix hysteresis
+|/
+* 4ef768b test: finalize FIFO, ADC boundaries and SQLite retention
+* 7582cee Correct module code from EET3 to EET5
+* 5aecbd9 Update rapport-tp3.md
+| * 4b38b7f (sauvegarde-avant-rebase-4b38b7f) test: finalize FIFO, ADC boundaries and SQLite retention
+|/
+* 4b31742 test: finalize TP3 validation and documentation
+* d3130ee docs: update TP3 report with final ENF-05 results
+* dcf6c11 test(integration): validate ENF-05 reconnection and buffer persistence
+* 73e0a9d fix(gateway): validate frames and ignore duplicate sequences
