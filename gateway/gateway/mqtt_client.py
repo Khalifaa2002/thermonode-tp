@@ -13,6 +13,8 @@ log = logging.getLogger("gateway.mqtt")
 
 
 class GatewayMqtt:
+    """Reçoit les trames de télémétrie via MQTT."""
+
     def __init__(self, handler: Handler, host: str | None = None, port: int | None = None):
         self.handler = handler
         self.host = host or os.environ.get("MQTT_HOST", "localhost")
@@ -25,10 +27,14 @@ class GatewayMqtt:
         self.client.on_message = self._on_message
         self.handler.on_alert = self.relay_alert
 
+    # Signature imposée par l'API de callbacks v2 de Paho.
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments,unused-argument
     def _on_connect(self, client, userdata, flags, reason_code, properties=None):
         log.info("connecté au broker %s:%d (%s)", self.host, self.port, reason_code)
         client.subscribe("thermonode/+/data")
 
+    # Paho fournit le client et le contexte dans cette signature.
+    # pylint: disable-next=unused-argument
     def _on_message(self, client, userdata, msg):
         try:
             self.handler.on_data(msg.payload.decode("utf-8", errors="replace"))

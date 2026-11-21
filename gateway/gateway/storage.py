@@ -8,6 +8,8 @@ RETENTION_S = 90 * 24 * 3600
 
 
 class Storage:
+    """Stocke les mesures dans une base SQLite."""
+
     def __init__(self, db_path: str | Path):
         self.path = str(db_path)
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
