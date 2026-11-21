@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
 {
@@ -21,7 +22,7 @@ uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
     return crc;
 }
 
-const char *state_name(node_state_t s)
+static const char *state_name(node_state_t s)
 {
     switch (s) {
         case STATE_NORMAL: return "NORMAL";
@@ -44,7 +45,7 @@ size_t frame_build(uint8_t *out, size_t cap, const frame_t *f)
     n = snprintf(payload, sizeof payload,
                  "{\"id\":\"%s\",\"seq\":%lu,\"t\":%lu,\"temp\":%s%ld.%02ld,\"state\":\"%s\"}",
                  f->id, (unsigned long)f->seq, (unsigned long)f->t,
-                 sign, (long)(a / 100), (long)(a % 100), state_name(f->state));
+                 sign, ((long)a / 100L), ((long)a % 100L), state_name(f->state));
     if ((n <= 0) || ((size_t)n >= sizeof payload)) {
         return 0u;
     }
@@ -53,7 +54,7 @@ size_t frame_build(uint8_t *out, size_t cap, const frame_t *f)
     if (cap < (size_t)n + 14u + 1u) {
         return 0u;
     }
-    memcpy(out, payload, (size_t)n - 1u);
+    (void)memcpy(out, payload, (size_t)n - 1u);
     n = snprintf((char *)out + (n - 1), cap - ((size_t)n - 1u), ",\"crc\":\"%04X\"}", crc) + (n - 1);
     return (size_t)n;
 }
@@ -63,8 +64,11 @@ bool frame_crc_ok(const uint8_t *json, size_t len)
     static const char key[] = ",\"crc\":\"";
     uint8_t tmp[TN_FRAME_MAX];
     const uint8_t *p;
-    size_t pos, hexlen = 4u, rest;
-    uint16_t given, calc;
+    size_t pos;
+    size_t hexlen = 4u;
+    size_t rest;
+    uint16_t given;
+    uint16_t calc;
     if (len > sizeof tmp) {
         return false;
     }
@@ -72,14 +76,22 @@ bool frame_crc_ok(const uint8_t *json, size_t len)
     if (p == NULL) {
         return false;
     }
-    pos = (size_t)(p - json);
-    if (pos + sizeof(key) - 1u + hexlen + 1u > len) {
+    ptrdiff_t crc_offset = p - json;
+    pos = (size_t)crc_offset;
+/* Dans frame_crc_ok */
+    if ((pos + sizeof(key) - 1u + hexlen + 1u) > len) {
         return false;
     }
-    given = (uint16_t)strtoul((const char *)p + sizeof(key) - 1u, NULL, 16);
+    const char *crc_text = (const char *)p + sizeof(key) - 1u;
+    errno = 0;
+    long parsed_crc = strtol(crc_text, NULL, 16);
+    if ((errno != 0) || (parsed_crc < 0L) || (parsed_crc > (long)UINT16_MAX)) {
+        return false;
+    }
+    given = (uint16_t)parsed_crc;
     rest = len - (pos + sizeof(key) - 1u + hexlen + 1u);
-    memcpy(tmp, json, pos);
-    memcpy(tmp + pos, json + pos + sizeof(key) - 1u + hexlen + 1u, rest);
+    (void)memcpy(tmp, json, pos);
+    (void)memcpy(tmp + pos, json + pos + sizeof(key) - 1u + hexlen + 1u, rest);
     calc = crc16_ccitt_false(tmp, pos + rest);
     return calc == given;
 }
@@ -89,7 +101,10 @@ bool json_get_int(const uint8_t *json, size_t len, const char *key, int32_t *val
     char pat[32];
     const char *p;
     (void)len;
-    snprintf(pat, sizeof pat, "\"%s\":", key);
+    int written = snprintf(pat, sizeof pat, "\"%s\":", key);
+    if ((written < 0) || ((size_t)written >= sizeof pat)) {
+        return false;
+    }
     p = strstr((const char *)json, pat);
     if (p == NULL) {
         return false;
@@ -98,17 +113,26 @@ bool json_get_int(const uint8_t *json, size_t len, const char *key, int32_t *val
     if ((*p != '-') && ((*p < '0') || (*p > '9'))) {
         return false;
     }
-    *value = (int32_t)strtol(p, NULL, 10);
-    return true;
+    errno = 0;
+    long parsed = strtol(p, NULL, 10);
+    if ((errno != 0) || (parsed < INT32_MIN) || (parsed > INT32_MAX)) {
+        return false;
+    }
+    *value = (int32_t)parsed;
+        return true;
 }
 
 bool json_get_str(const uint8_t *json, size_t len, const char *key, char *out, size_t cap)
 {
     char pat[32];
-    const char *p, *e;
+    const char *p;
+    const char *e;
     size_t n;
     (void)len;
-    snprintf(pat, sizeof pat, "\"%s\":\"", key);
+    int written = snprintf(pat, sizeof pat, "\"%s\":\"", key);
+    if ((written < 0) || ((size_t)written >= sizeof pat)) {
+        return false;
+    }
     p = strstr((const char *)json, pat);
     if (p == NULL) {
         return false;
@@ -118,11 +142,12 @@ bool json_get_str(const uint8_t *json, size_t len, const char *key, char *out, s
     if (e == NULL) {
         return false;
     }
-    n = (size_t)(e - p);
-    if (n + 1u > cap) {
+    ptrdiff_t string_length = e - p;
+    n = (size_t)string_length;
+    if ((n + 1u) > cap) {
         return false;
     }
-    memcpy(out, p, n);
+    (void)memcpy(out, p, n);
     out[n] = '\0';
     return true;
 }
