@@ -2,3 +2,27 @@
 unusedFunction
 missingIncludeSystem
 *:test/*
+# DEV-004 — retours anticipés dans les fichiers recensés
+misra-c2012-15.5:src/convert.c
+misra-c2012-15.5:src/filter.c
+misra-c2012-15.5:src/frame.c
+misra-c2012-15.5:src/node.c
+misra-c2012-15.5:src/ringbuf.c
+misra-c2012-15.5:src/threshold.c
+
+# DEV-005 — opérations sur les pointeurs dans le traitement des trames JSON
+misra-c2012-18.4:src/frame.c
+
+# DEV-006 — API POSIX utilisée par le simulateur hôte
+misra-c2012-21.1:src/main.c:3
+misra-c2012-21.10:src/main.c:4
+# Faux positif : la macro sélectionne les déclarations POSIX dans <time.h>.
+misra-c2012-2.5:src/main.c:3
+
+# DEV-007 — état persistant du détecteur de défaut et du filtre
+misra-c2012-8.9:src/fault.c:4
+misra-c2012-8.9:src/filter.c:3
+
+# DEV-002 — snprintf pour la sérialisation JSON
+misra-c2012-21.6:src/frame.c
+misra-c2012-21.6:src/node.c
