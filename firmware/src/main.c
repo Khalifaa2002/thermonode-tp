@@ -24,7 +24,7 @@ int main(void)
     next = hal_clock_ms();
     for (;;) {
         uint32_t now = hal_clock_ms();
-        if ((int32_t)(now - next) >= 0) {
+        if ((now - next) <= (uint32_t)INT32_MAX) {
             next += ACQ_PERIOD();                  /* EF-01 : période sans dérive cumulée */
             node_step();
         }
