@@ -63,8 +63,11 @@ bool frame_crc_ok(const uint8_t *json, size_t len)
     static const char key[] = ",\"crc\":\"";
     uint8_t tmp[TN_FRAME_MAX];
     const uint8_t *p;
-    size_t pos, hexlen = 4u, rest;
-    uint16_t given, calc;
+    size_t pos;
+    size_t hexlen = 4u;
+    size_t rest;
+    uint16_t given;
+    uint16_t calc;
     if (len > sizeof tmp) {
         return false;
     }
@@ -108,7 +111,8 @@ bool json_get_int(const uint8_t *json, size_t len, const char *key, int32_t *val
 bool json_get_str(const uint8_t *json, size_t len, const char *key, char *out, size_t cap)
 {
     char pat[32];
-    const char *p, *e;
+    const char *p;
+    const char *e;
     size_t n;
     (void)len;
     int written = snprintf(pat, sizeof pat, "\"%s\":\"", key);
