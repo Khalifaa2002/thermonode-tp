@@ -14,6 +14,8 @@ class FrameError(ValueError):
 
 @dataclass(frozen=True)
 class Frame:
+    """Représente une trame de télémétrie décodée."""
+
     node_id: str
     seq: int
     t: int
