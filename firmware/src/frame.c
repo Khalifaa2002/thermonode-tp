@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
 {
@@ -105,8 +106,13 @@ bool json_get_int(const uint8_t *json, size_t len, const char *key, int32_t *val
     if ((*p != '-') && ((*p < '0') || (*p > '9'))) {
         return false;
     }
-    *value = (int32_t)strtol(p, NULL, 10);
-    return true;
+    errno = 0;
+    long parsed = strtol(p, NULL, 10);
+    if ((errno != 0) || (parsed < INT32_MIN) || (parsed > INT32_MAX)) {
+        return false;
+    }
+    *value = (int32_t)parsed;
+        return true;
 }
 
 bool json_get_str(const uint8_t *json, size_t len, const char *key, char *out, size_t cap)
