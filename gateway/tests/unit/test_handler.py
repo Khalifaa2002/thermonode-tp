@@ -68,3 +68,14 @@ def test_C03_sqlite_retention_is_90_days(tmp_path):
     assert storage.last_seq("TN01") == 3
 
     storage.close()
+
+
+
+def test_alert_is_stored_and_counted_without_a_callback(tmp_path):
+    handler = Handler(tmp_path / "gw.sqlite")
+    try:
+        assert handler.on_data(frame(1, "ALERT")) is not None
+        assert handler.metrics["alerts"] == 1
+        assert handler.storage.count("TN01") == 1
+    finally:
+        handler.storage.close()

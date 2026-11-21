@@ -39,3 +39,29 @@ def test_EI02_invalid_frames_are_rejected(bad):
 
 def test_EI02_check_crc_without_member_is_false():
     assert check_crc('{"id":"TN01"}') is False
+
+
+
+def test_EI02_invalid_json_with_valid_crc_reports_a_syntax_error():
+    with pytest.raises(FrameError, match="^json:"):
+        parse_frame(signed('{"id":}'))
+
+
+def test_EI02_array_with_a_valid_crc_is_rejected():
+    crc = crc16_ccitt_false(b'[{"id":"TN01"}]')
+    text = f'[{{"id":"TN01","crc":"{crc:04X}"}}]'
+    assert check_crc(text)
+    with pytest.raises(FrameError, match="^format$"):
+        parse_frame(text)
+
+
+@pytest.mark.parametrize(("field", "value", "reason"), [
+    ("id", '"TN 01"', "id"),
+    ("t", "-1", "t"),
+])
+def test_EI02_rejects_invalid_identifier_and_timestamp(field, value, reason):
+    fields = {"id": '"TN01"', "seq": "1", "t": "1", "temp": "25.5", "state": '"NORMAL"'}
+    fields[field] = value
+    payload = "{" + ",".join(f'"{key}":{item}' for key, item in fields.items()) + "}"
+    with pytest.raises(FrameError, match=f"^{reason}$"):
+        parse_frame(signed(payload))

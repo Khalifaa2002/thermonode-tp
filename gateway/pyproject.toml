@@ -13,4 +13,3 @@ markers = ["integration: nécessite docker compose", "flaky_quarantine: test ins
 [tool.coverage.run]
 branch = true
 source = ["gateway"]
-omit = ["gateway/__main__.py", "gateway/mqtt_client.py"]

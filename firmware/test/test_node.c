@@ -1,6 +1,7 @@
 /* Machine à états complète avec doublures : EF-04, EF-05, EF-06, EF-07, EF-08, ENF-01, ENF-05, EI-03 */
 #include "unity.h"
 #include "node.h"
+#include "threshold.h"
 #include "hal.h"
 #include "hal_double.h"
 #include "frame.h"
@@ -329,6 +330,14 @@ void test_EF01_default_acquisition_period_is_1000ms(void)
     TEST_ASSERT_EQUAL_UINT32(1000, node_acq_period_ms()); 
 }
 
+void test_EF04_default_hysteresis_is_four_degrees(void)
+{
+    node_init(THR_DEFAULT_HIGH, THR_DEFAULT_HYST);
+    TEST_ASSERT_EQUAL_INT32(400, threshold_hyst());
+    TEST_ASSERT_EQUAL(THR_NONE, threshold_step(5600, true));
+    TEST_ASSERT_EQUAL(THR_CLEAR, threshold_step(5599, true));
+}
+
 void test_watchdog_kicked_each_step(void)
 { 
     feed(ADC_25, 3); 
@@ -364,6 +373,7 @@ int main(void)
     RUN_TEST(test_EI03_command_without_value_is_nacked_format);
     RUN_TEST(test_no_command_pending_does_nothing);
     RUN_TEST(test_EF01_default_acquisition_period_is_1000ms);
+    RUN_TEST(test_EF04_default_hysteresis_is_four_degrees);
     RUN_TEST(test_watchdog_kicked_each_step);
     return UNITY_END();
 }
