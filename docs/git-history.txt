@@ -1,6 +1,8 @@
-TP4 ThermoNode - Historique des changements verifies sur main (fbdd119)
+TP4 ThermoNode - Historique verifie sur main (4c2b521)
 
-*   fbdd119 (HEAD -> main, origin/main) Merge pull request #3 from Khalifaa2002/docs/deviations
+* 4c2b521 (HEAD -> main) test(tp4): cover gateway behavior and default hysteresis
+* 8488454 docs(tp4): finalize report and Git history
+*   fbdd119 (origin/main) Merge pull request #3 from Khalifaa2002/docs/deviations
 |\
 | * 49a4489 (origin/docs/deviations, docs/deviations) docs(tp4): record static analysis results
 | * 7f117d3 docs(misra): document targeted deviations
@@ -39,5 +41,3 @@ TP4 ThermoNode - Historique des changements verifies sur main (fbdd119)
 |/
 * 4b31742 test: finalize TP3 validation and documentation
 * d3130ee docs: update TP3 report with final ENF-05 results
-* dcf6c11 test(integration): validate ENF-05 reconnection and buffer persistence
-* 73e0a9d fix(gateway): validate frames and ignore duplicate sequences
