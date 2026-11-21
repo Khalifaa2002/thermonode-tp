@@ -22,7 +22,7 @@ uint16_t crc16_ccitt_false(const uint8_t *data, size_t len)
     return crc;
 }
 
-const char *state_name(node_state_t s)
+static const char *state_name(node_state_t s)
 {
     switch (s) {
         case STATE_NORMAL: return "NORMAL";
